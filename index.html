@@ -127,6 +127,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <h3>Reserve this gift?</h3>
@@ -162,31 +164,44 @@ const wishlist = [
 ];
 
 const STORAGE_KEY = "weddingWishlistReservations";
-const API_ENDPOINT = "http://localhost:5000/api/wishlist";
+const SUPABASE_URL = "https://gzrwgpphyjemnhhxiadr.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_NYdrM23sg5oPRAh_VvNisA_gbNsVY5t";
+const SUPABASE_TABLE = "wishlist_statuses";
+const supabase = SUPABASE_URL.includes("YOUR_") || SUPABASE_ANON_KEY.includes("YOUR_") ? null : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let reservations = {};
 let pendingIndex = null;
 
 async function loadReservations() {
-  try {
-    const response = await fetch(API_ENDPOINT);
-    if (!response.ok) throw new Error("Failed to load reservations");
-    reservations = await response.json();
-  } catch {
-    reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  if (supabase) {
+    const { data, error } = await supabase
+      .from(SUPABASE_TABLE)
+      .select("statuses")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (!error && data && data.statuses) {
+      reservations = data.statuses;
+      return;
+    }
   }
+
+  reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 }
 
 async function saveReservations() {
-  try {
-    await fetch(API_ENDPOINT, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reservations)
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  } catch {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  if (supabase) {
+    const { error } = await supabase
+      .from(SUPABASE_TABLE)
+      .upsert({ id: 1, statuses: reservations }, { onConflict: "id" });
+
+    if (!error) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+      return;
+    }
   }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
 }
 
 async function render() {
