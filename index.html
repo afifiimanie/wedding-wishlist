@@ -127,8 +127,6 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal">
     <h3>Reserve this gift?</h3>
@@ -167,38 +165,103 @@ const STORAGE_KEY = "weddingWishlistReservations";
 const SUPABASE_URL = "https://gzrwgpphyjemnhhxiadr.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_NYdrM23sg5oPRAh_VvNisA_gbNsVY5t";
 const SUPABASE_TABLE = "wishlist_statuses";
-const supabase = SUPABASE_URL.includes("YOUR_") || SUPABASE_ANON_KEY.includes("YOUR_") ? null : window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let reservations = {};
 let pendingIndex = null;
 
 async function loadReservations() {
-  if (supabase) {
-    const { data, error } = await supabase
-      .from(SUPABASE_TABLE)
-      .select("statuses")
-      .eq("id", 1)
-      .maybeSingle();
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.1&select=statuses`,
+      {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: "application/json"
+        }
+      }
+    );
 
-    if (!error && data && data.statuses) {
-      reservations = data.statuses;
+    if (!response.ok) {
+      throw new Error("Supabase read failed");
+    }
+
+    const data = await response.json();
+
+    if (Array.isArray(data) && data.length > 0 && data[0].statuses) {
+      reservations = data[0].statuses;
       return;
     }
+  } catch {
+    // Fall back to local storage if Supabase is unavailable
   }
 
   reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
 }
 
 async function saveReservations() {
-  if (supabase) {
-    const { error } = await supabase
-      .from(SUPABASE_TABLE)
-      .upsert({ id: 1, statuses: reservations }, { onConflict: "id" });
+  try {
+    const checkResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.1&select=id`,
+      {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Accept: "application/json"
+        }
+      }
+    );
 
-    if (!error) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-      return;
+    if (!checkResponse.ok) {
+      throw new Error("Supabase check failed");
     }
+
+    const existingRows = await checkResponse.json();
+
+    if (Array.isArray(existingRows) && existingRows.length > 0) {
+      const patchResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.1`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify({ statuses: reservations })
+        }
+      );
+
+      if (!patchResponse.ok) {
+        throw new Error("Supabase update failed");
+      }
+    } else {
+      const postResponse = await fetch(
+        `${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify({ id: 1, statuses: reservations })
+        }
+      );
+
+      if (!postResponse.ok) {
+        throw new Error("Supabase insert failed");
+      }
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+    return;
+  } catch {
+    // Fall back to local storage if Supabase is unavailable
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
