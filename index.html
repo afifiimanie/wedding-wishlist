@@ -169,6 +169,14 @@ const SUPABASE_TABLE = "wishlist_statuses";
 let reservations = {};
 let pendingIndex = null;
 
+function getLocalReservations() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 async function loadReservations() {
   try {
     const response = await fetch(
@@ -197,7 +205,7 @@ async function loadReservations() {
     // Fall back to local storage if Supabase is unavailable
   }
 
-  reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  reservations = getLocalReservations();
 }
 
 async function saveReservations() {
@@ -258,13 +266,21 @@ async function saveReservations() {
       }
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+    } catch {
+      // Ignore storage failures on browsers that block localStorage
+    }
     return;
   } catch {
     // Fall back to local storage if Supabase is unavailable
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  } catch {
+    // Ignore storage failures on browsers that block localStorage
+  }
 }
 
 async function render() {
