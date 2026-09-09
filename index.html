@@ -1,32 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bride & Groom Wishlist</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <main class="page-shell">
-      <header class="page-header">
-        <p class="eyebrow">Bride & Groom</p>
-        <h1>Wishlist</h1>
-      </header>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bride & Groom — Wedding Wishlist</title>
+<style>
+  :root {
+    --ink: #3d3937;
+    --muted: #7c7470;
+    --paper: #fffdfb;
+    --soft: #f7f1ed;
+    --line: #eadfd8;
+    --accent: #9a7565;
+    --accent-dark: #765548;
+    --success: #55775f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, #fffaf7 0%, #f8f2ee 100%);
+  }
+  .page { max-width: 1080px; margin: auto; padding: 28px 18px 60px; }
+  .hero {
+    text-align: center; padding: 58px 24px 42px;
+    background: rgba(255,255,255,.72); border: 1px solid var(--line);
+    border-radius: 24px; box-shadow: 0 12px 40px rgba(72,50,40,.06);
+  }
+  .eyebrow { letter-spacing: .18em; text-transform: uppercase; font: 600 11px Arial,sans-serif; color: var(--accent); }
+  h1 { font-size: clamp(36px, 7vw, 62px); font-weight: 400; margin: 13px 0 10px; }
+  .heart { color: var(--accent); font-size: 22px; }
+  .intro { max-width: 700px; margin: 0 auto; line-height: 1.8; font-size: 16px; color: #675e59; }
+  .stats {
+    display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 28px;
+  }
+  .stat { background: var(--soft); border: 1px solid var(--line); padding: 9px 15px; border-radius: 999px; font: 600 12px Arial,sans-serif; color: var(--muted); }
+  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:15px; margin: 28px 0 14px; }
+  .toolbar h2 { font-size: 23px; font-weight: 400; margin:0; }
+  .note { font: 12px Arial,sans-serif; color: var(--muted); }
+  .table-wrap { background: rgba(255,255,255,.9); border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th {
+    text-align:left; padding:16px 20px; background:#f7f0eb;
+    font:700 11px Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; color:#756963;
+  }
+  td { padding:16px 20px; border-top:1px solid var(--line); vertical-align:middle; font-size:16px; }
+  tr:hover td { background:#fffaf7; }
+  .shop {
+    display:inline-flex; align-items:center; gap:7px; padding:9px 13px;
+    border-radius:999px; background:#f3e9e3; color:var(--accent-dark);
+    text-decoration:none; font:700 12px Arial,sans-serif; transition:.2s;
+  }
+  .shop:hover { background:#eadbd2; transform:translateY(-1px); }
+  .reserve-btn {
+    border:1px solid #d8c6bc; background:#fff; color:var(--accent-dark);
+    border-radius:999px; padding:9px 15px; cursor:pointer; font:700 12px Arial,sans-serif;
+  }
+  .reserve-btn:hover { background:var(--soft); }
+  .reserved { color:var(--success); font:700 12px Arial,sans-serif; white-space:nowrap; }
+  .reserved::before { content:"✓"; margin-right:7px; }
+  .modal-backdrop {
+    display:none; position:fixed; inset:0; background:rgba(35,25,20,.45);
+    align-items:center; justify-content:center; padding:18px; z-index:10;
+  }
+  .modal-backdrop.show { display:flex; }
+  .modal {
+    width:min(440px,100%); background:#fffdfb; border:1px solid var(--line);
+    border-radius:22px; padding:28px; box-shadow:0 25px 70px rgba(0,0,0,.18);
+  }
+  .modal h3 { margin:0 0 8px; font-size:25px; font-weight:400; }
+  .modal p { color:var(--muted); line-height:1.6; font-size:14px; }
+  .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+  .modal-actions button { padding:10px 16px; border-radius:999px; cursor:pointer; border:1px solid var(--line); }
+  .confirm { background:var(--accent); color:white; border-color:var(--accent)!important; }
+  .footer { text-align:center; margin-top:30px; color:var(--muted); font-size:13px; line-height:1.7; }
+  @media(max-width:700px) {
+    .page { padding:12px 10px 40px; }
+    .hero { padding:42px 18px 30px; border-radius:18px; }
+    .table-wrap { border:0; background:transparent; overflow:visible; }
+    table, thead, tbody, tr, th, td { display:block; }
+    thead { display:none; }
+    tr {
+      background:#fff; border:1px solid var(--line); border-radius:16px;
+      margin-bottom:12px; padding:4px 0; box-shadow:0 5px 20px rgba(72,50,40,.04);
+    }
+    td { border:0; padding:10px 16px; }
+    td:first-child { font-size:18px; padding-top:15px; }
+    td:nth-child(2)::before { content:"SHOPPING LINK"; display:block; font:700 9px Arial,sans-serif; letter-spacing:.12em; color:var(--muted); margin-bottom:7px; }
+    td:nth-child(3)::before { content:"STATUS"; display:block; font:700 9px Arial,sans-serif; letter-spacing:.12em; color:var(--muted); margin-bottom:7px; }
+    .toolbar { align-items:flex-start; flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    <div class="eyebrow">A little something for our new chapter</div>
+    <h1>Bride &amp; Groom's Wishlist <span class="heart">♡</span></h1>
+    <p class="intro">
+      Thank you so much for asking what we wish for. While your presence, love and blessings
+      on our special day mean more to us than anything, we've put together a little wishlist
+      for those who would like to gift us something as we begin our journey together.
+    </p>
+    <div class="stats">
+      <span class="stat"><span id="total">19</span> Items</span>
+      <span class="stat"><span id="available">19</span> Available</span>
+      <span class="stat"><span id="reservedCount">0</span> Reserved</span>
+    </div>
+  </section>
 
-      <section class="table-card">
-        <table id="wishlistTable">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Link</th>
-              <th>Reserved status</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
-    </main>
+  <div class="toolbar">
+    <h2>Our Wishlist</h2>
+    <div class="note">Tap "Reserve" after choosing your gift.</div>
+  </div>
 
-    <script src="script.js"></script>
-  </body>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th>Link</th><th>Reserved Status</th></tr></thead>
+      <tbody id="wishlistBody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Thank you for being part of our special day. Your presence is the greatest gift of all. 🤍
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Reserve this gift?</h3>
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="confirm" onclick="confirmReservation()">Yes, reserve it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const wishlist = [
+  ["Dish rack","https://s.shopee.com.my/3LQh6IDGGp"],
+  ["Spice rack","https://s.shopee.com.my/8AVwrmnpVV"],
+  ["Microwave","https://s.shopee.com.my/3Vk7JFfdQZ"],
+  ["Rice cooker","https://s.shopee.com.my/9053rPRFlg"],
+  ["Knife set with holder","https://s.shopee.com.my/6AksUJn1ui"],
+  ["Knife set","https://s.shopee.com.my/4Azo6gb4p9"],
+  ["Teapot and cup set","https://s.shopee.com.my/6AksUxipk"],
+  ["Cooking pan","https://s.shopee.com.my/BTfM5ONkD"],
+  ["Chopping board","https://s.shopee.com.my/9zxb4Hj1o"],
+  ["Kitchen set","https://s.shopee.com.my/8AVwtRYLWi"],
+  ["Spice rack","https://s.shopee.com.my/2LY9wnStKZ"],
+  ["Kitchen rack","https://my.shp.ee/5t3wwrhe?fromSource=copy_link&smtt=0.0.9"],
+  ["Seasoning storage","https://s.shopee.com.my/8KpN63UuxY"],
+  ["Rice dispenser","https://s.shopee.com.my/4VceXEzVi5"],
+  ["Blender","https://s.shopee.com.my/8fSDV2BDNK"],
+  ["Juicer","https://s.shopee.com.my/1BMCZHzIkE"],
+  ["Iron","https://s.shopee.com.my/6VNivBYaQk"],
+  ["Kettle","https://s.shopee.com.my/9V1KUkrmcS"],
+  ["Air fryer","https://s.shopee.com.my/5VVBjXT0cI"]
+];
+
+// Demo persistence: reservations are saved in this browser.
+// For a shared guest reservation system, connect this page to Supabase/Firebase.
+const STORAGE_KEY = "weddingWishlistReservations";
+let reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+let pendingIndex = null;
+
+function render() {
+  const body = document.getElementById("wishlistBody");
+  body.innerHTML = wishlist.map((item, i) => {
+    const isReserved = !!reservations[i];
+    return `<tr>
+      <td>${escapeHtml(item[0])}</td>
+      <td><a class="shop" href="${item[1]}" target="_blank" rel="noopener noreferrer">View on Shopee ↗</a></td>
+      <td>
+        ${isReserved
+          ? '<span class="reserved">Reserved</span>'
+          : `<button class="reserve-btn" onclick="openModal(${i})">Reserve</button>`}
+      </td>
+    </tr>`;
+  }).join("");
+  updateStats();
+}
+function updateStats() {
+  const count = Object.keys(reservations).length;
+  document.getElementById("total").textContent = wishlist.length;
+  document.getElementById("reservedCount").textContent = count;
+  document.getElementById("available").textContent = wishlist.length - count;
+}
+function openModal(i) {
+  pendingIndex = i;
+  document.getElementById("modalText").textContent =
+    `You are reserving "${wishlist[i][0]}". Please make sure this is the gift you would like to choose before confirming.`;
+  document.getElementById("modalBackdrop").classList.add("show");
+}
+function closeModal() {
+  pendingIndex = null;
+  document.getElementById("modalBackdrop").classList.remove("show");
+}
+function confirmReservation() {
+  if (pendingIndex === null) return;
+  reservations[pendingIndex] = true;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  closeModal();
+  render();
+}
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[c]));
+}
+document.getElementById("modalBackdrop").addEventListener("click", e => {
+  if (e.target.id === "modalBackdrop") closeModal();
+});
+render();
+</script>
+</body>
 </html>
