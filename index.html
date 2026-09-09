@@ -161,22 +161,46 @@ const wishlist = [
   ["Air fryer","https://s.shopee.com.my/5VVBjXT0cI"]
 ];
 
-// Demo persistence: reservations are saved in this browser.
-// For a shared guest reservation system, connect this page to Supabase/Firebase.
 const STORAGE_KEY = "weddingWishlistReservations";
-let reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+const API_ENDPOINT = "http://localhost:5000/api/wishlist";
+let reservations = {};
 let pendingIndex = null;
 
-function render() {
+async function loadReservations() {
+  try {
+    const response = await fetch(API_ENDPOINT);
+    if (!response.ok) throw new Error("Failed to load reservations");
+    reservations = await response.json();
+  } catch {
+    reservations = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  }
+}
+
+async function saveReservations() {
+  try {
+    await fetch(API_ENDPOINT, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reservations)
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  } catch {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  }
+}
+
+async function render() {
+  await loadReservations();
+
   const body = document.getElementById("wishlistBody");
   body.innerHTML = wishlist.map((item, i) => {
-    const isReserved = !!reservations[i];
+    const isReserved = reservations[i] === true;
     return `<tr>
       <td>${escapeHtml(item[0])}</td>
       <td><a class="shop" href="${item[1]}" target="_blank" rel="noopener noreferrer">View on Shopee ↗</a></td>
       <td>
         ${isReserved
-          ? '<span class="reserved">Reserved</span>'
+          ? `<span class="reserved">Reserved</span> <button class="reserve-btn" onclick="cancelReservation(${i})">Cancel</button>`
           : `<button class="reserve-btn" onclick="openModal(${i})">Reserve</button>`}
       </td>
     </tr>`;
@@ -184,7 +208,7 @@ function render() {
   updateStats();
 }
 function updateStats() {
-  const count = Object.keys(reservations).length;
+  const count = Object.keys(reservations).filter((key) => reservations[key] === true).length;
   document.getElementById("total").textContent = wishlist.length;
   document.getElementById("reservedCount").textContent = count;
   document.getElementById("available").textContent = wishlist.length - count;
@@ -199,12 +223,17 @@ function closeModal() {
   pendingIndex = null;
   document.getElementById("modalBackdrop").classList.remove("show");
 }
-function confirmReservation() {
+async function confirmReservation() {
   if (pendingIndex === null) return;
   reservations[pendingIndex] = true;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+  await saveReservations();
   closeModal();
-  render();
+  await render();
+}
+async function cancelReservation(index) {
+  reservations[index] = false;
+  await saveReservations();
+  await render();
 }
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({
